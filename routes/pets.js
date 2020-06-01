@@ -1,24 +1,22 @@
 const express = require('express');
 const Joi = require('@hapi/joi');
 
-const Pet = require('../models/pets');
-const { validateBody } = require('../middlewares/route');
+const Pets = require('../models/pets');
+const { validateBody, validateQuery } = require('../middlewares/route');
 
 const router = express.Router();
 
-router.post(
-  '/',
-  validateBody(Joi.object().keys({
-    name: Joi.string().required().description('Pet Name'),
-    colour: Joi.string().required().description('Pet Colour'),
-    age: Joi.number().integer().required().description('Pet Age'),
-  }),
+router.post("/", validateBody(Joi.object().keys({
+  name: Joi.string().required().description('Pet name'),
+  colour: Joi.string().required().description('Pet colour'),
+  age: Joi.number().integer().required().description('Pet age'),
+}),
   {
     stripUnknown: true,
   }),
   async (req, res, next) => {
     try {
-      const pet = new Pet(req.body);
+      const pet = new Pets(req.body);
       await pet.save();
       res.status(201).json(pet);
     } catch (e) {
@@ -27,46 +25,45 @@ router.post(
   }
 );
 router.get('/', async (req, res, next) => {
-    try {
-        Pets.find().exec().then(data=>{
-        res.status(200).json(data);
-        });
-    } catch (e) {
-        res.send('something went wrong!!!');
-        next(e);
-    }
+  try {
+    const pets = await Pets.find().exec();
+    res.status(200).json(pets);
+  }
+  catch (e) {
+    next(e);
+  }
 });
-router.get('/pet/:name', async (req, res, next) => {
+router.get("/pet",
+  validateQuery(Joi.object().keys({
+    name: Joi.string().required().description('Pet name'),
+  }),
+    {
+      stripUnknown: true,
+    }),
+  async (req, res, next) => {
     try {
-        Pets.find({name:req.param.name}).exec().then(data=>{
-            if(!data){
-                res.status(200).json(data);
-            }else{
-            res.status(404).end();
-            }
-            });
-    }catch (e) {
-        res.send('something went wrong!!!');
-        next(e);
+      const petName = req.query.name;
+      const pets = await Pets.find({ name: petName }).exec();
+      res.status(200).json(pets);
+    } catch (exception) {
+      next(exception);
     }
-});
+  });
 
-router.delete('/pet/:Id', async (req, res, next) => {
-    try {
-
-            Pet.findByIdAndRemove(rea.body.Id).exec().then(doc=>
-                {
-                    if(!doc){
-                        return 
-                        res.status(404).end();
-                        return new status(204).end();
-                    }
-
-                    });
-               
-                 } catch (e) {
-        res.send('something went wrong!!!');
-        next(e);
-    }
-});
+// Post API to delete pets 
+router.post("/delete",
+  validateBody(Joi.object().keys({
+    _id: Joi.string().required().description('Pet id')
+  }),
+    {
+      stripUnknown: true,
+    }), async (req, res, next) => {
+      try {
+        const petId = req.body._id;
+        const pets = await Pets.deleteOne({ _id: petId });
+        pets.deletedCount && res.status(201).json("Pet deleted");
+      } catch (exception) {
+        next(exception);
+      }
+    });
 module.exports = router;

@@ -46,8 +46,21 @@ describe('functional - pet', () => {
         expect(res.body.colour).to.equal(pet.colour);
     });
 
+    it('NHP should fail when an invalid data type is passed in request for creating a pet', async () => {
+        const pet = {
+            name: 'John',
+            age: '2',
+            colour: 'white',
+        };
+        const res = await request(app).post('/pets').send(pet);
+        expect(res.status).to.equal(201);
+        expect(res.body.name).to.equal(pet.name);
+        expect(res.body.age).not.to.equal(pet.age);
+        expect(res.body.colour).to.equal(pet.colour);
+    });
+
     it('should display all pets', async () => {
-        const res = await request(app).get('/pets');
+        const res = await request(app).get('/pets/').send();
         expect(res.status).to.equal(200);
     });
 
@@ -60,12 +73,17 @@ describe('functional - pet', () => {
         const res = await request(app).post('/pets').send(pet);
         expect(res.status).to.equal(201);
         expect(res.body.name).to.equal(pet.name);
-        const petNameRes = await request(app).get('/pets/pet/'+pet.name).send();
-        //console.log(petNameRes);
+        const petNameRes = await request(app).get('/pets/pet?name=' + pet.name).send();
         expect(petNameRes.status).to.equal(200);
-     
+
     });
-    it('should delete the pest selected', async () => {
+    it('NHP should fail when trying to search for a pet with out passing anything', async () => {
+        const petNameRes = await request(app).get('/pets/pet?name=').send();
+        expect(petNameRes.status).to.equal(400);
+
+    });
+
+    it('should delete the pet selected', async () => {
         const pet = {
             name: 'John',
             age: 2,
@@ -74,7 +92,15 @@ describe('functional - pet', () => {
         const res = await request(app).post('/pets').send(pet);
         expect(res.status).to.equal(201);
         expect(res.body.name).to.equal(pet.name);
-        const petNameRes = await request(app).delete('/pets/pet/'+pet.name).send();
-        console.log(petNameRes);        
+        const petDeleteRes = await request(app).
+        post('/pets/delete/').send({ _id: res.body._id });
+        expect(petDeleteRes.status).to.equal(201);
+    });
+
+    it('NHP should fail when trying to delete the pet with out passing a valid pet id', async () => {
+        const petDeleteRes = await request(app).post('/pets/delete/').send({ _id: '' });
+        expect(petDeleteRes.status).to.equal(400);
+
+
     });
 });
