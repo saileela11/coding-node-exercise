@@ -20,5 +20,8 @@ app.use('/', (err, req, res, next) => {
     message: err.message,
   });
 });
-
+app.listen(8080, () => {
+  console.log("App launched!");
+  // Connect database
+})
 module.exports = app;
